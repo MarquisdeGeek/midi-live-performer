@@ -1,0 +1,29 @@
+{
+  "name": "midi-live-performer",
+  "version": "1.0.0",
+  "description": "Real-time MIDI control and playback for NodeJS fans",
+  "main": "src/index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarquisdeGeek/midi-live-performer.git"
+  },
+  "keywords": [
+    "midi",
+    "music"
+  ],
+  "author": "Steven Goodwin",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/MarquisdeGeek/midi-live-performer/issues"
+  },
+  "homepage": "https://github.com/MarquisdeGeek/midi-live-performer#readme",
+  "dependencies": {
+    "midi-info": "^1.0.0"
+  }
+}
