@@ -1,0 +1,16 @@
+{
+  "name": "midi-echo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@julusian/midi": "^3.4.0",
+    "midi-info": "^1.0.0",
+    "midi-live-performer": "^1.0.0"
+  }
+}
