@@ -103,12 +103,12 @@ async function main() {
         result.forEach((r) => {
             const echoParams = echoSettings[echoPowered ? echoUnit : 0].data;
             //
-            if (r.msg == midi_info.Constants.Messages.NOTE_ON) {
+            if (r.msg === midi_info.Constants.Messages.NOTE_ON) {
                 echoParams.forEach((echo) => {
                     sequencer.qNoteOn(r.channel, r.pitch + echo.pitch, r.volume / echo.volume,  echo.atTime);
                 });
 
-            } else if (r.msg == midi_info.Constants.Messages.NOTE_OFF) {
+            } else if (r.msg === midi_info.Constants.Messages.NOTE_OFF) {
                 echoParams.forEach((echo) => {
                     sequencer.qNoteOff(r.channel, r.pitch + echo.pitch,  echo.atTime);
                 });
