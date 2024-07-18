@@ -1,40 +1,49 @@
+const EventEmitter = require('events').EventEmitter;
+const util = require("util");
+
+const MIDIMessageQueue = require('./midi_message_queue').MIDIMessageQueue;
+
 
 
 function traceLog() {
-    // console.log(...arguments)
+    // console.log(...arguments);
 }
 
 
 function traceError() {
     // Not using console.error because these are internal messages of "TODO" et ak
     // and we don't want to stop the app because of those, since we can continue
-    console.log(arguments)
+    console.log(...arguments);
 }
-
-
 
 
 const Sequencer = function(output) {
     const midi_info = require('midi-info');
-    
+    const self = this;
+
     let beatsPerMinute = 120; // BPM is munged into 500000 microseconds pqn, for 4/4
     let qnDuration = midi_info.Constants.Pulses.DURATION_CROCHET;
     let pulsesPerQuarterNote = midi_info.Constants.Pulses.DURATION_CROCHET;
     let ppqnDivider = 24; // Node can't really keep up with lots of subdivisions, so this is our latency/accuracy fudge
     let quarterNotesPerBar = 4; // for bar calculations
     let intervalTimer;          // reference to the time object, or null if sequencer is stopped
-    let intervalPulsesPerQuarter;
-    let queue = [];
+    let intervalPulsesPerQuarter;// how many calls to the setIntervall callback for each quarter note?
+    let queue;
     let beatCallbacks;
     let bar, beat, pulse; //the time frame we'll be playing on the next interval
 
     (function ctor() {
         beatCallbacks = new Array(4).fill();
+        queue = new MIDIMessageQueue();
 
         restartSongPosition();
         restartTimer();
 
     })();
+
+    function on() {
+        return self.on(...arguments);
+    }
 
     function restartSongPosition() {
         bar = beat = 0;
@@ -83,12 +92,11 @@ const Sequencer = function(output) {
     // TODO: check count of bar/beat/pulse
     function checkQueue() {
         let nextQueue = [];
-        if (pulse == 0)
-            traceLog(` --- ${bar}  ${beat}  ${pulse} }`);
+
+        self.emit('pulse', bar, beat, pulse);
 
         queue.forEach((q) => {
             if (q.t === 0) {
-                traceLog("  entry to play:", JSON.stringify(q))
                 output.sendMessage(q.d);
             } else if (q.t < 0) {
                 // NOP - this event is in the past.
@@ -109,19 +117,23 @@ const Sequencer = function(output) {
             }
         }
 
-        queue = nextQueue;
+        queue.replaceQueue(nextQueue);
 
-
-        // Callbacks, if the next interval will be playing a new beat
+        // Callbacks, trigger one if the next interval will be playing a new beat
         if (pulse === 0) {
+            // New way!
+            self.emit('beat', bar, beat, pulse);
+
+            // Old way
             if (beatCallbacks[beat]) {
                 beatCallbacks[beat](bar, beat, pulse);
             }
         }
 
-        if (pulse == 1)
-            traceLog(` xxxx ${bar}  ${beat}  ${pulse} }`);
-
+        // Or a new bar
+        if (beat === 0) {
+            self.emit('bar', bar, beat, pulse);
+        }
     }
 
     function restartTimer() {
@@ -137,7 +149,7 @@ const Sequencer = function(output) {
 
         let actualBPM = 60000/*seconds, in ms (our units for pulse period)*/ / (periodBetweenPulses * intervalPulsesPerQuarter);
 
-        traceLog(` crochet =: ${periodBetweenPulses * intervalPulsesPerQuarter} ms   intervalPulsesPerQuarter=${intervalPulsesPerQuarter} that means timer every ${periodBetweenPulses} ms and actual=${actualBPM}`);
+        traceError(`Timing: Target BPM = ${beatsPerMinute} // crochet = ${periodBetweenPulses * intervalPulsesPerQuarter} ms  // intervalPulsesPerQuarter=${intervalPulsesPerQuarter} that means timer every ${periodBetweenPulses} ms and actual=${actualBPM}`);
 
         stopTimer();
         //
@@ -154,17 +166,23 @@ const Sequencer = function(output) {
 
         intervalTimer = null;
     }
-    //
-    
+
+
     function setProgram(chnl, patch) {
         output.sendMessage([midi_info.Constants.Messages.SET_PROGRAM | chnl, patch]);
     }
+
+
+    function sendMessage(data) {
+        output.sendMessage(data);
+    }
+
 
     //* @deprecated */
     function changePatch(chnl, patch) {
         return setProgram(chnl, patch);
     }
-    
+
 
     function playNoteOn(chnl, pitch, volume = 120) {
         output.sendMessage([
@@ -174,6 +192,7 @@ const Sequencer = function(output) {
         ]);
     }
 
+
     function playNoteOff(chnl, pitch) {
         output.sendMessage([
             midi_info.Constants.Messages.NOTE_ON  | chnl,
@@ -181,6 +200,7 @@ const Sequencer = function(output) {
             0
         ]);
     }
+
 
     function sendCC(chnl, ccMsg, ccParam) {
         output.sendMessage([
@@ -192,33 +212,24 @@ const Sequencer = function(output) {
 
 
     function qClear(chnl) {
-        let firstChannel = chnl ? chnl : 0;
-        let lastChannel = chnl ? chnl : 15;
-        //
-        let nextQueue = [];
-        queue.forEach((q) => {
-            if (q.c >= firstChannel && q.c <= lastChannel) {
-                // NOP - don't re-add, we're clearing it
-                // The exception is for NoteOff messages, although this doesn't handle
-                // the case where extra NoteOn msgs are given later. Is this a normal or pathalogical case?
-                // TOOD
-                // I think the correct is to match Offs to Ons, by tracking them like the keyboard input
-                // module
-                if (q.d[0] === midi_info.Constants.Messages.NOTE_OFF) {
-                    nextQueue.push(q);
-                }
-            } else {
-                nextQueue.push(q);
-            }
-        });
-        //
-        queue = nextQueue;
+        // TOOD
+        // I think the correct is to match Offs to Ons, by tracking them like the keyboard input
+        // module
+
+        return queue.clear(chnl);
+    }
+
+
+    // If there is a note about to be played, then remove it (and its equivalent NoteOff msg)
+    // from the list
+    function qClearCurrentNote(channel) {
+        queue.clearNotePairsAtTime(channel, 0);
     }
 
 
     // NOTE: Previous duration uses 1/1 for crochet, 2/1 for minim. Now we
     // use ppqn
-    function qNote(waitFor, chnl, pitch, volume = 120, duration = 384) {
+    function qNote(waitFor, chnl, pitch, volume = 120, duration = qnDuration) {
 
         waitFor = Math.floor(waitFor);
         duration = Math.floor(duration);
@@ -232,7 +243,33 @@ const Sequencer = function(output) {
     }
 
 
-    function qNoteAtNextBar(chnl, pitch, volume = 120, duration = 384) {
+    function getCurrentBar() {
+        return bar;
+    }
+
+    function getTimeSinceBarStart() {
+        let pulsesSinceStart = pulsesPerQuarterNote * beat;
+        pulsesSinceStart += pulse * ppqnDivider;
+
+        return pulsesSinceStart;
+    }
+
+
+    // If we have a 2 bar section, this will get us the time of
+    // the first bar, in that 2 bar block.
+    function getTimeSinceBarSectionStart(barCount) {
+        let timeSinceBarStart = getTimeSinceBarStart();
+
+        // For multi-bar loops, we need to offset for the previous bars, also.
+        // e.g. for a 2 bar loop, 0,2,3,4 are the first bars, so no addition needed
+        let barInLoop = getCurrentBar() % barCount;
+        let timeSinceLoopStart = (pulsesPerQuarterNote * quarterNotesPerBar * barInLoop) + timeSinceBarStart;
+
+        return timeSinceLoopStart;
+    }
+
+
+    function qNoteAtNextBar(chnl, pitch, volume = 120, duration = qnDuration) {
         let nextBeatIn = intervalPulsesPerQuarter - pulse;
         let beatsLeftInBar = quarterNotesPerBar - beat;
         let waitFor = nextBeatIn;
@@ -258,9 +295,15 @@ const Sequencer = function(output) {
     }
 
 
+    function qMessage(waitFor, chnl, data) {
+        waitFor = Math.floor(waitFor);
+
+        queue.addMessage({c:chnl, d:data, t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+        return waitFor;
+    }
 
 
-    function qNoteOn(chnl, pitch, volume = 120, waitFor = 1) {
+    function qNoteOn(chnl, pitch, volume = 120, waitFor = 0) {
         // 
         if (chnl < 0 || chnl > 15) {
             return;
@@ -271,9 +314,8 @@ const Sequencer = function(output) {
 
         waitFor = Math.floor(waitFor);
         
-        // If startAt = 384
-        queue.push({c:chnl, d:[midi_info.Constants.Messages.NOTE_ON | chnl, pitch, volume], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
-        // queue.push({d:[144 | chnl, pitch, volume], t:Math.floor(duration * intervalPulsesPerQuarter)});
+        queue.addMessage({c:chnl, d:[midi_info.Constants.Messages.NOTE_ON | chnl, pitch, volume], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+
         traceLog(`Q.on (${waitFor}) is: ${JSON.stringify(queue)}`);
         return waitFor;
     }
@@ -281,16 +323,16 @@ const Sequencer = function(output) {
     function qNoteOff(chnl, pitch, waitFor = 1) {
         waitFor = Math.floor(waitFor);
 
-        queue.push({c:chnl, d:[midi_info.Constants.Messages.NOTE_OFF | chnl, pitch, 0], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+        queue.addMessage({c:chnl, d:[midi_info.Constants.Messages.NOTE_OFF | chnl, pitch, 0], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
         traceLog(`Q.off (${waitFor}) is: ${JSON.stringify(queue)}`);
 
         return waitFor;
     }
 
-    
+
     function allNotesOff(chnl) {
-        let firstChannel = chnl ? chnl : 0;
-        let lastChannel = chnl ? chnl : 15;
+        let firstChannel = chnl === undefined ? 0 : chnl;
+        let lastChannel = chnl === undefined ? 15 : chnl;
         //
         for(let c=firstChannel;c<=lastChannel;++c) {
             output.sendMessage([
@@ -302,10 +344,10 @@ const Sequencer = function(output) {
     }
 
 
-    // TODO: Remove callbacks. Add multiple callbacks.
+    // TODO: Remove callbacks, to migrate fully to EventEmitter
     function onBeat(cbfn, whichBeat) {
-        let firstBeat = whichBeat ? whichBeat : 0;
-        let lastBeat= whichBeat ? whichBeat : 3;
+        let firstBeat = whichBeat === undefined ? 0 : whichBeat;
+        let lastBeat= whichBeat === undefined ? 3 : whichBeat;
         //
         for(let b=firstBeat;b<=lastBeat;++b) {
             beatCallbacks[b] = cbfn;
@@ -320,12 +362,15 @@ const Sequencer = function(output) {
         setPPQNDivider,
         setProgram,
         sendCC,
+        sendMessage,
         //
         playNoteOff,
         playNoteOn,
 
         // Queuing
         qClear,
+        qClearCurrentNote,
+        qMessage,
         qNote,
         qNoteOn,
         qNoteOff,
@@ -336,15 +381,21 @@ const Sequencer = function(output) {
         restartSequence,
         stopSequence,
         allNotesOff,
+        //
+        getCurrentBar,
+        getTimeSinceBarStart,
+        getTimeSinceBarSectionStart,
 
         // Callback/handlers
         onBeat,
+        on,
 
         // Deprecated
         changePatch,
     };
 };
 
+util.inherits(Sequencer, EventEmitter);
 
 module.exports = {
     Sequencer,
