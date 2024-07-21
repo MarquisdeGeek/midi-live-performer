@@ -168,13 +168,13 @@ const Sequencer = function(output) {
     }
 
 
-    function setProgram(chnl, patch) {
-        output.sendMessage([midi_info.Constants.Messages.SET_PROGRAM | chnl, patch]);
+    function sendMessage(data) {
+        output.sendMessage(data);
     }
 
 
-    function sendMessage(data) {
-        output.sendMessage(data);
+    function setProgram(channel, patch) {
+        output.sendMessage(midi_info.Messages.makeSetProgram(channel, pitch, patch));
     }
 
 
@@ -185,29 +185,17 @@ const Sequencer = function(output) {
 
 
     function playNoteOn(chnl, pitch, volume = 120) {
-        output.sendMessage([
-            midi_info.Constants.Messages.NOTE_ON  | chnl,
-            pitch,
-            volume
-        ]);
+        output.sendMessage(midi_info.Messages.makeNoteOn(channel, pitch, volume));
     }
 
 
     function playNoteOff(chnl, pitch) {
-        output.sendMessage([
-            midi_info.Constants.Messages.NOTE_ON  | chnl,
-            pitch,
-            0
-        ]);
+        output.sendMessage(midi_info.Messages.makeNoteOff(channel, pitch));
     }
 
 
-    function sendCC(chnl, ccMsg, ccParam) {
-        output.sendMessage([
-            midi_info.Constants.Messages.SET_PARAMETER  | chnl,
-            ccMsg,
-            ccParam
-        ]);
+    function sendCC(channel, ccMsg, ccParam) {
+        output.sendMessage(midi_info.Messages.makeCC(channel, ccMsg, ccParam));
     }
 
 
@@ -335,11 +323,7 @@ const Sequencer = function(output) {
         let lastChannel = chnl === undefined ? 15 : chnl;
         //
         for(let c=firstChannel;c<=lastChannel;++c) {
-            output.sendMessage([
-                midi_info.Constants.Messages.SET_PARAMETER | c,
-                midi_info.Constants.Messages.cc.ALL_NOTES_OFF,
-                0
-            ]);
+            output.sendMessage(midi_info.Messages.makeAllNotesOff(c));
         }
     }
 
