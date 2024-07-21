@@ -25,7 +25,7 @@ module.exports = [
             },
             { // one basic echo
                 pitch:   0,
-                volume:  2,
+                volume:  1.5,
                 atTime:  qnDuration
             },
         ]
@@ -42,17 +42,17 @@ module.exports = [
             },
             {
                 pitch:   0,
-                volume:  4,
+                volume:  1.2,
                 atTime:  1*qnDuration
             },
             {
                 pitch:   0,
-                volume: 10,
+                volume:  1.8,
                 atTime:  2*qnDuration
             },
             {
                 pitch:    0,
-                volume:  20,
+                volume:  2.1,
                 atTime:  3*qnDuration
             },
         ]
@@ -69,27 +69,27 @@ module.exports = [
             },
             {
                 pitch:   7,
-                volume:  4,
+                volume:  1.5,
                 atTime:  1*qnDuration/4
             },
             {
                 pitch:   7,
-                volume:  7,
+                volume:  2,
                 atTime:  2*qnDuration/4
             },
             {
-                pitch:    0,
-                volume:  10,
+                pitch:   0,
+                volume:  3,
                 atTime:  3*qnDuration/4
             },
             {
                 pitch:   12,
-                volume:  15,
+                volume:  4,
                 atTime:  4*qnDuration/4
             },
             {
-                pitch:    7,
-                volume:  30,
+                pitch:   7,
+                volume:  5,
                 atTime:  5*qnDuration/4
             },
         ]
