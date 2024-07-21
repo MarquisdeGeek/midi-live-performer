@@ -174,7 +174,7 @@ const Sequencer = function(output) {
 
 
     function setProgram(channel, patch) {
-        output.sendMessage(midi_info.Messages.makeSetProgram(channel, pitch, patch));
+        output.sendMessage(midi_info.Messages.makeSetProgram(channel, patch));
     }
 
 
@@ -199,19 +199,23 @@ const Sequencer = function(output) {
     }
 
 
-    function qClear(chnl) {
+    function qClear(channel) {
         // TOOD
         // I think the correct is to match Offs to Ons, by tracking them like the keyboard input
         // module
+        allNotesOff(channel);
 
-        return queue.clear(chnl);
+        return queue.clear(channel);
     }
 
 
-    // If there is a note about to be played, then remove it (and its equivalent NoteOff msg)
-    // from the list
     function qClearCurrentNote(channel) {
+        // If there is a note about to be played, then remove it (and its equivalent NoteOff msg)
+        // from the list
         queue.clearNotePairsAtTime(channel, 0);
+
+        // If there are any notes playing, then send the off message
+        allNotesOff(channel);
     }
 
 
