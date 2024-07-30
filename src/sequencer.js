@@ -179,17 +179,17 @@ const Sequencer = function(output) {
 
 
     //* @deprecated */
-    function changePatch(chnl, patch) {
-        return setProgram(chnl, patch);
+    function changePatch(channel, patch) {
+        return setProgram(channel, patch);
     }
 
 
-    function playNoteOn(chnl, pitch, volume = 120) {
+    function playNoteOn(channel, pitch, volume = 120) {
         output.sendMessage(midi_info.Messages.makeNoteOn(channel, pitch, volume));
     }
 
 
-    function playNoteOff(chnl, pitch) {
+    function playNoteOff(channel, pitch) {
         output.sendMessage(midi_info.Messages.makeNoteOff(channel, pitch));
     }
 
@@ -221,13 +221,13 @@ const Sequencer = function(output) {
 
     // NOTE: Previous duration uses 1/1 for crochet, 2/1 for minim. Now we
     // use ppqn
-    function qNote(waitFor, chnl, pitch, volume = 120, duration = qnDuration) {
+    function qNote(waitFor, channel, pitch, volume = 120, duration = qnDuration) {
 
         waitFor = Math.floor(waitFor);
         duration = Math.floor(duration);
         
-        qNoteOn(chnl, pitch, volume, waitFor);
-        qNoteOff(chnl, pitch, waitFor+duration);
+        qNoteOn(channel, pitch, volume, waitFor);
+        qNoteOff(channel, pitch, waitFor+duration);
 
         traceLog(`Q.note (w=${waitFor}  d=${duration}) is:  ${JSON.stringify(queue)}`);
         // traceLog("Q is:", JSON.stringify(queue))
@@ -261,7 +261,7 @@ const Sequencer = function(output) {
     }
 
 
-    function qNoteAtNextBar(chnl, pitch, volume = 120, duration = qnDuration) {
+    function qNoteAtNextBar(channel, pitch, volume = 120, duration = qnDuration) {
         let nextBeatIn = intervalPulsesPerQuarter - pulse;
         let beatsLeftInBar = quarterNotesPerBar - beat;
         let waitFor = nextBeatIn;
@@ -279,7 +279,7 @@ const Sequencer = function(output) {
             waitFor += (beatsLeftInBar-1) * intervalPulsesPerQuarter;
         }
 
-        qNote(waitFor, chnl, pitch, volume, duration);
+        qNote(waitFor, channel, pitch, volume, duration);
 
         traceLog("Q is:", JSON.stringify(queue))
 
@@ -287,17 +287,17 @@ const Sequencer = function(output) {
     }
 
 
-    function qMessage(waitFor, chnl, data) {
+    function qMessage(waitFor, channel, data) {
         waitFor = Math.floor(waitFor);
 
-        queue.addMessage({c:chnl, d:data, t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+        queue.addMessage({c:channel, d:data, t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
         return waitFor;
     }
 
 
-    function qNoteOn(chnl, pitch, volume = 120, waitFor = 0) {
+    function qNoteOn(channel, pitch, volume = 120, waitFor = 0) {
         // 
-        if (chnl < 0 || chnl > 15) {
+        if (channel < 0 || channel > 15) {
             return;
         }
 
@@ -306,25 +306,25 @@ const Sequencer = function(output) {
 
         waitFor = Math.floor(waitFor);
         
-        queue.addMessage({c:chnl, d:[midi_info.Constants.Messages.NOTE_ON | chnl, pitch, volume], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+        queue.addMessage({c:channel, d:[midi_info.Constants.Messages.NOTE_ON | channel, pitch, volume], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
 
         traceLog(`Q.on (${waitFor}) is: ${JSON.stringify(queue)}`);
         return waitFor;
     }
 
-    function qNoteOff(chnl, pitch, waitFor = 1) {
+    function qNoteOff(channel, pitch, waitFor = 1) {
         waitFor = Math.floor(waitFor);
 
-        queue.addMessage({c:chnl, d:[midi_info.Constants.Messages.NOTE_OFF | chnl, pitch, 0], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
+        queue.addMessage({c:channel, d:[midi_info.Constants.Messages.NOTE_OFF | channel, pitch, 0], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});
         traceLog(`Q.off (${waitFor}) is: ${JSON.stringify(queue)}`);
 
         return waitFor;
     }
 
 
-    function allNotesOff(chnl) {
-        let firstChannel = chnl === undefined ? 0 : chnl;
-        let lastChannel = chnl === undefined ? 15 : chnl;
+    function allNotesOff(channel) {
+        let firstChannel = channel === undefined ? 0 : channel;
+        let lastChannel = channel === undefined ? 15 : channel;
         //
         for(let c=firstChannel;c<=lastChannel;++c) {
             output.sendMessage(midi_info.Messages.makeAllNotesOff(c));
