@@ -12,6 +12,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // The global sequencer object
 let sequencer;
+let midiInputSend;
 
 // State of instrument
 let bestChord = [];
@@ -28,7 +29,7 @@ let fillAccompaniment = {
 process.on('SIGINT', async function() {
     console.log("Caught interrupt signal, stopping sequence");
     sequencer.stopSequence();
-    sequencer.sendCC(0, midi_info.Constants.Messages.cc.LOCAL_CONTROL, 1);
+    midiInputSend.sendMessage(midi_info.Messages.makeLocalControl(0, true));
 
     console.log("Sending notes off");
     sequencer.allNotesOff();
@@ -118,30 +119,42 @@ async function main() {
 
     // Input, from the last device (usually an external synth)
     const midiInput = new midi.Input();
-    midiInput.openPort(midiInput.getPortCount() - 1);
+    const midiInputPort = 3; // or //midiInput.getPortCount() - 1);
+    midiInput.openPort(midiInputPort);
+
+    midiInputSend = new midi.Output();
+    midiInputSend.openPort(midiInputPort);
+    midiInputSend.sendMessage(midi_info.Messages.makeLocalControl(0, false));
 
 
     // Output
     const midiOutput = new midi.Output();
-    midiOutput.openPort(midiOutput.getPortCount() - 1); // my output synth, ymmv
+    const midiOutputPort = 1;
+    midiOutput.openPort(midiOutputPort);
+
     sequencer = new performer.Sequencer(midiOutput);
 
 
     // A new keyboard object, used here to parse the input into text
     const keys = new performer.Keyboard();
 
-    sequencer.sendCC(0, midi_info.Constants.Messages.cc.LOCAL_CONTROL, 0);
 
     sequencer.onBeat((bar, beat, pulse) => {
         // Clear rest of notes on this channel...
         // (this is moderately safe, since we only fill a single quarter note's worth of data)
-        sequencer.qClear(0);
-        sequencer.qClear(9);
+        sequencer.qClear(1);
+        sequencer.qClear(2);
+        sequencer.qClear(10);
 
-        accompanyBass[fillAccompaniment.bass](sequencer, bestChord, 0, bar, beat, pulse);
-        accompanyChords[fillAccompaniment.chords](sequencer, bestChord, 0, bar, beat, pulse);
-        accompanyDrums[fillAccompaniment.drums](sequencer, bestChord, 9, bar, beat, pulse);
+        sequencer.setProgram(0, midi_info.Constants.Instruments.ACOUSTIC_GRAND_PIANO);
+        sequencer.setProgram(1, midi_info.Constants.Instruments.ELECTRIC_BASS_FINGER);
+        sequencer.setProgram(2, midi_info.Constants.Instruments.PERCUSSIVE_ORGAN);
+
+        accompanyBass[fillAccompaniment.bass](sequencer, bestChord, 1, bar, beat, pulse);
+        accompanyChords[fillAccompaniment.chords](sequencer, bestChord, 2, bar, beat, pulse);
+        accompanyDrums[fillAccompaniment.drums](sequencer, bestChord, 10, bar, beat, pulse);
     }); // beats are [0,1,2,3] so 3 would be the 4th beat of a 4/4 bar. Leaving blank means every beat.
+
 
     // Inner loop
     const inputStream = midi.createReadStream(midiInput)
