@@ -1,0 +1,18 @@
+{
+  "name": "strummer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@julusian/midi": "^3.5.3",
+    "chord-identifier": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "midi-info": "^1.0.1",
+    "midi-live-performer": "^1.0.0"
+  }
+}
