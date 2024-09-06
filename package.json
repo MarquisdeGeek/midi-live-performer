@@ -1,6 +1,6 @@
 {
   "name": "midi-live-performer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Real-time MIDI control and playback for NodeJS fans",
   "main": "src/index.js",
   "directories": {
@@ -24,9 +24,9 @@
   },
   "homepage": "https://github.com/MarquisdeGeek/midi-live-performer#readme",
   "dependencies": {
-    "@julusian/midi": "^3.4.0",
+    "@julusian/midi": "^3.5.3",
     "chord-identifier": "^1.0.0",
-    "midi-info": "^1.0.0",
-    "midi-live-performer": "^1.0.0"
+    "midi-info": "^1.0.1",
+    "midi-live-performer": "^1.0.2"
   }
 }
