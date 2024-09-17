@@ -73,7 +73,30 @@ const Sequencer = function(output) {
             restartTimer();
         }
     }
-    
+
+
+    function setBeatsPerBar(beats) {
+        quarterNotesPerBar = beats;
+
+        if (intervalTimer) {
+            restartTimer();
+        }
+    }
+
+
+    function getTimeSinceBarStartPPQN() {
+        let qnPulses = ppqnDivider * pulse;   // in a quarter note (which we call 'beat')
+        let beatsSoFar = beat + (bar * quarterNotesPerBar);
+
+        let globalTime = pulsesPerQuarterNote * beatsSoFar;
+
+
+        globalTime += qnPulses;
+
+        return globalTime;
+    }
+
+
     /**
      * Set this to a higher number for slower machines, as it results in fewer timer messages.
      * (The timing will be less accurate, however)
@@ -93,11 +116,11 @@ const Sequencer = function(output) {
     function checkQueue() {
         let nextQueue = [];
 
-        self.emit('pulse', bar, beat, pulse);
+        self.emit('pulse', bar, beat, pulse, ppqnDivider * pulse);
 
         queue.forEach((q) => {
             if (q.t === 0) {
-                output.sendMessage(q.d);
+                sendMessage(q.d);
             } else if (q.t < 0) {
                 // NOP - this event is in the past.
                 // Not sure how we missed it, but ignore it anyway
@@ -169,12 +192,14 @@ const Sequencer = function(output) {
 
 
     function sendMessage(data) {
-        output.sendMessage(data);
+        const globalPPQN = getTimeSinceBarStartPPQN();
+
+        output.sendMessage(data, globalPPQN);
     }
 
 
     function setProgram(channel, patch) {
-        output.sendMessage(midi_info.Messages.makeSetProgram(channel, patch));
+        sendMessage(midi_info.Messages.makeSetProgram(channel, patch));
     }
 
 
@@ -185,17 +210,17 @@ const Sequencer = function(output) {
 
 
     function playNoteOn(channel, pitch, volume = 120) {
-        output.sendMessage(midi_info.Messages.makeNoteOn(channel, pitch, volume));
+        sendMessage(midi_info.Messages.makeNoteOn(channel, pitch, volume));
     }
 
 
     function playNoteOff(channel, pitch) {
-        output.sendMessage(midi_info.Messages.makeNoteOff(channel, pitch));
+        sendMessage(midi_info.Messages.makeNoteOff(channel, pitch));
     }
 
 
     function sendCC(channel, ccMsg, ccParam) {
-        output.sendMessage(midi_info.Messages.makeCC(channel, ccMsg, ccParam));
+        sendMessage(midi_info.Messages.makeCC(channel, ccMsg, ccParam));
     }
 
 
@@ -239,6 +264,7 @@ const Sequencer = function(output) {
         return bar;
     }
 
+
     function getTimeSinceBarStart() {
         let pulsesSinceStart = pulsesPerQuarterNote * beat;
         pulsesSinceStart += pulse * ppqnDivider;
@@ -258,6 +284,16 @@ const Sequencer = function(output) {
         let timeSinceLoopStart = (pulsesPerQuarterNote * quarterNotesPerBar * barInLoop) + timeSinceBarStart;
 
         return timeSinceLoopStart;
+    }
+
+
+    function getSongPosition() {
+        return {
+            bar:    bar,
+            beat:   beat,
+            pulse:  pulse,
+            qnp:    ppqnDivider * pulse
+        };
     }
 
 
@@ -327,7 +363,7 @@ const Sequencer = function(output) {
         let lastChannel = channel === undefined ? 15 : channel;
         //
         for(let c=firstChannel;c<=lastChannel;++c) {
-            output.sendMessage(midi_info.Messages.makeAllNotesOff(c));
+            sendMessage(midi_info.Messages.makeAllNotesOff(c));
         }
     }
 
@@ -347,6 +383,7 @@ const Sequencer = function(output) {
         // Immediate actions
         setBPM,
         setPPQN,
+        setBeatsPerBar,
         setPPQNDivider,
         setProgram,
         sendCC,
@@ -367,12 +404,14 @@ const Sequencer = function(output) {
 
         // System and utilities
         restartSequence,
+        restartSongPosition,
         stopSequence,
         allNotesOff,
         //
         getCurrentBar,
         getTimeSinceBarStart,
         getTimeSinceBarSectionStart,
+        getSongPosition,
 
         // Callback/handlers
         onBeat,
