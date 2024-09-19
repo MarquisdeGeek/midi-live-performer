@@ -1,6 +1,6 @@
 {
   "name": "midi-live-performer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Real-time MIDI control and playback for NodeJS fans",
   "main": "src/index.js",
   "directories": {
