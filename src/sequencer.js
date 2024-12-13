@@ -174,6 +174,10 @@ const Sequencer = function(output) {
 
         traceError(`Timing: Target BPM = ${beatsPerMinute} // crochet = ${periodBetweenPulses * intervalPulsesPerQuarter} ms  // intervalPulsesPerQuarter=${intervalPulsesPerQuarter} that means timer every ${periodBetweenPulses} ms and actual=${actualBPM}`);
 
+        // Send a BPM message, for cases when the output is a file
+        sendMessage(midi_info.Messages.makeMetaTempoBPM(beatsPerMinute), 0);
+
+
         stopTimer();
         //
         intervalTimer = setInterval(() => {
@@ -191,15 +195,26 @@ const Sequencer = function(output) {
     }
 
 
-    function sendMessage(data) {
+    function sendMessage(data, track) {
         const globalPPQN = getTimeSinceBarStartPPQN();
 
-        output.sendMessage(data, globalPPQN);
+        output.sendMessage(data, globalPPQN, track);
     }
 
 
     function setProgram(channel, patch) {
         sendMessage(midi_info.Messages.makeSetProgram(channel, patch));
+    }
+
+
+    // Meta (non-channel specific) messages
+    function sendMarkerMessage(track, message) {
+        sendMessage(midi_info.Messages.makeMetaMarker(message), track);
+    }
+
+
+    function sendTrackName(track, name) {
+        sendMessage(midi_info.Messages.makeMetaTrackName(name), track);
     }
 
 
@@ -388,6 +403,9 @@ const Sequencer = function(output) {
         setProgram,
         sendCC,
         sendMessage,
+        // Meta
+        sendMarkerMessage,
+        sendTrackName,
         //
         playNoteOff,
         playNoteOn,
