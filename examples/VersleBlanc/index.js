@@ -1,12 +1,11 @@
 require('dotenv').config();
 
-const readline = require('readline');
 const midi = require('@julusian/midi');
 const midi_info = require('midi-info');
 const performer = require('midi-live-performer');
+const scoreVersleBlanc = require('./s_versleblanc');
+const scoreSchubertLoop = require('./s_schubert');
 
-
-const internal = require('stream');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -21,8 +20,6 @@ let sequencer;
 process.on('SIGINT', async function() {
 
     console.log("Sending notes off");
-//    midiOutput = new midi.Output();
-            // midiOutput.allNotesOff();
 
     sequencer.allNotesOff();
     await delay(100);
@@ -31,6 +28,10 @@ process.on('SIGINT', async function() {
     process.exit();
 });
 
+
+function log(msg) {
+    console.log(msg);
+}
 
 
 function listDevices() {
@@ -70,25 +71,40 @@ function openPortByName(midiDevice, name, defaultIfFail) {
 }
 
     
-
-function scoreInit(scorePart) {
+async function scoreInit(scorePart) {
     scorePart.parts.forEach((note) => {
-        midiOutput.sendMessage([
-            midi_info.Constants.Messages.SET_PARAMETER | note.channel,
-            midi_info.Constants.Messages.cc.BANK_SELECT,
-            note.bank
-        ]);
-        midiOutput.sendMessage(midi_info.Messages.makeSetProgram(note.channel, note.patch));
+        if (typeof note.bank !== typeof undefined) {
+            midiOutput.sendMessage([
+                midi_info.Constants.Messages.SET_PARAMETER | note.channel,
+                midi_info.Constants.Messages.cc.BANK_SELECT,
+                note.bank
+            ]);
+        }
+
+        if (typeof note.patch !== typeof undefined) {
+            midiOutput.sendMessage(midi_info.Messages.makeSetProgram(note.channel, note.patch));
+        }
     });
 }
 
-function scoreStart(options, scorePart) {
-    // Compute change
-    // scorePart.shifting = {};
-    scorePart.tickCount = scorePart.overTime * (1000 / options.interval);
 
-    console.log(`Ready:`);
-    // console.log(part);
+async function scoreStart(options, scorePart) {
+
+    // Compute time counter
+    scorePart.tickCount = 0;
+    scorePart.tickMax = scorePart.overTime * (1000 / options.interval);
+   
+    log(`Starting: ${scorePart.name ? scorePart.name : ""}`);
+    
+    
+
+    if (options.oneTouchPerformance && options.oneTouchStarted) {
+        return;
+    }
+
+    // Prepare the global state
+    options.channels = [];
+    options.oneTouchStarted = true;
 
     scorePart.parts.forEach((note) => {
 
@@ -105,7 +121,11 @@ function scoreStart(options, scorePart) {
 
 
         // // 2. Pitch bend amount
-        const semitones = Math.abs(note.noteEnd - note.noteStart);
+        let semitones = Math.abs(note.noteEnd - note.noteStart);
+        if (typeof options.forcePitchWheelRange !== typeof undefined) {
+            semitones = options.forcePitchWheelRange;
+        }
+
         midiOutput.sendMessage([
             midi_info.Constants.Messages.CONTROL_CHANGE | note.channel,
             0x06, semitones // +/-
@@ -128,7 +148,7 @@ function scoreStart(options, scorePart) {
         // Prepare the note state
         note.shifting = {
             cents: 0,
-            delta: Math.floor(0x1fff / scorePart.tickCount)
+            delta: Math.floor(0x1fff / scorePart.tickMax)
         };
 
         if (note.noteEnd < note.noteStart) {
@@ -136,69 +156,89 @@ function scoreStart(options, scorePart) {
         }
         
         // Force the pitch wheel to centre
-        const value = 0x2000;
-        const msg = [
-            midi_info.Constants.Messages.SET_PITCHWHEEL | note.channel,
-            (value & 0x7f), // LSB
-            (value>>7) & 0x7f //MSB
-        ];
-        console.log(`${note.channel} : Pitch ${note.shifting.cents} to ${value}, msg=${msg}`)
-        midiOutput.sendMessage(msg);
+        midiOutput.sendMessage(midi_info.Messages.makeSetPitchWheel(note.channel, 0x2000));
+
+        // Set channel state
+        options.channels[note.channel] = {
+            channel: note.channel,
+            pitchWheelStart: note.noteStart,
+            pitchWheelRange: semitones,
+            lastNotePlayed: note.noteStart
+        };
 
         // Play
         console.log(`On:`,note.channel, note.noteStart, 120);
-        let rt = midiOutput.sendMessage(midi_info.Messages.makeNoteOn(note.channel, note.noteStart, 120));
-        console.log(rt);
-        // midiOutput.sendMessage(midi_info.Messages.makeNoteOn(note.channel, note.noteStart, 120));
-    })
+        midiOutput.sendMessage(midi_info.Messages.makeNoteOn(note.channel, note.noteStart, 120));
+    });
+
+    //
+    if (typeof scorePart.preWait !== typeof undefined) {
+        log(`Pre-wait : ${scorePart.preWait}`);
+        await delay(scorePart.preWait);
+    }
 }
 
-function scoreEnd(scorePart) {
-    scorePart.parts.forEach((note) => {
-        console.log(`Off:`,note.channel, note.noteStart, 120);
-        midiOutput.sendMessage(midi_info.Messages.makeNoteOff(note.channel, note.noteStart));
-    })
+function scoreEnd(options) {
+    options.channels.forEach((channel) => {
+        console.log(`Off:`,channel.channel, channel.lastNotePlayed, 120);
+
+        midiOutput.sendMessage(midi_info.Messages.makeNoteOff(channel.channel, channel.lastNotePlayed));
+    });
 }
 
 
 function startInterval(options) {
-    let ival = setInterval(() => {
+    let ival = setInterval(async () => {
         const currentScorePart = options.score[options.scoreIndex];
 
-        if (--currentScorePart.tickCount === 0) {
-            scoreEnd(options.score[options.scoreIndex]);
-            // midiOutput.sendMessage(midi_info.Messages.makeNoteOff(options.channel, options.noteStart));
+        if (++currentScorePart.tickCount > currentScorePart.tickMax) {
+
+            if (typeof currentScorePart.postWait !== typeof undefined) {
+                log(`Post-wait : ${currentScorePart.postWait}`);
+                clearInterval(ival);
+                await delay(currentScorePart.postWait);
+                startInterval(options);
+            }
+
+            // Only stop the notes at the end (or if options say so)
+            if (!options.oneTouchPerformance || options.scoreIndex+1 >= options.score.length) {
+                scoreEnd(options);
+            } else {
+                log("End not done")
+            }
             
-            // ANy more score parts to play?
+            
+            // Any more score parts to play?
             if (++options.scoreIndex >= options.score.length) {
-                console.log(`end..`);
+                log(`Exit..`);
                 clearInterval(ival);
                 process.exit(0);
                 return;
             }
 
-            scoreStart(options, options.score[options.scoreIndex]);
+            await scoreStart(options, options.score[options.scoreIndex]);
 
             return;
         }
 
         currentScorePart.parts.forEach((note) => {
 
-            // bend it like ...
-            note.shifting.cents += note.shifting.delta;
-
             const centre = 0x2000;
-            let value = note.shifting.cents + centre;
-            value = Math.min(value, 0x3fff);
-            value = Math.max(value, 0);// 14-bit value
 
-            const msg = [
-                midi_info.Constants.Messages.SET_PITCHWHEEL | note.channel,
-                (value & 0x7f), // LSB
-                (value>>7) & 0x7f //MSB
-            ];
-            console.log(`${note.channel} : Pitch ${note.shifting.cents} to ${value}, msg=${msg}`)
-            midiOutput.sendMessage(msg);
+            const percentThrough = currentScorePart.tickCount / currentScorePart.tickMax;
+            const baseSemi = note.noteStart - options.channels[note.channel].pitchWheelStart;
+            const semiInRange = note.noteEnd - note.noteStart;
+
+            const fractionalSemi = baseSemi + semiInRange * percentThrough
+            const wheelTo = fractionalSemi / options.channels[note.channel].pitchWheelRange;
+
+            let value = wheelTo * 0x1fff;
+            value += centre;
+            value = Math.round(value);
+
+            midiOutput.sendMessage(midi_info.Messages.makeSetPitchWheel(note.channel, value));
+
+            // log(`${note.channel} : Pitch to ${value}, msg=${midi_info.Messages.makeSetPitchWheel(note.channel, value)}`)
         });
 
     }, options.interval);
@@ -212,49 +252,20 @@ async function main() {
     openPortByName(midiOutput, process.env.MIDI_OUTPUT, 0);
     sequencer = new performer.Sequencer(midiOutput);
 
-    
-    const rootC = midi_info.Constants.Notes.C4;
+    const useScore = scoreSchubertLoop;
+    // const useScore = scoreVersleBlanc;
     const options = {
-        score:[
-            {
-                // As taken from https://imgur.com/harmonic-progression-of-vers-le-blanc-tape-mpmHQSq
-                parts: [
-                    {
-                        channel: 0,
-                        bank: 0,
-                        patch: 48,
-                        noteStart: rootC + midi_info.Constants.Notes.C,
-                        noteEnd:   rootC + midi_info.Constants.Notes.E,
-                    },
-                    {
-                        channel: 1,
-                        bank: 0,
-                        patch: 44,
-                        noteStart: rootC + midi_info.Constants.Notes.A,
-                        noteEnd:   rootC + midi_info.Constants.Notes.D,
-                    },
-                    {
-                        channel: 2,
-                        bank: 0,
-                        patch: 103,
-                        noteStart: rootC + midi_info.Constants.Notes.B,
-                        noteEnd:   rootC + midi_info.Constants.Notes.F,
-                    },
-                ],
-                overTime: 10 + 15*60// in seconds
-            },
-        ],
+        score: useScore.score,
+        oneTouchPerformance: useScore.oneTouchPerformance,
+        forcePitchWheelRange: useScore.forcePitchWheelRange,
         //
         scoreIndex: 0,
         interval: 100, // in ms
     };
 
  
-    // midiOutput.sendMessage(midi_info.Messages.makeNoteOn(options.channel, options.noteStart, 120));
-    scoreInit(options.score[0]);
-    scoreStart(options, options.score[0]);
-
-    await delay(1000)
+    await scoreInit(options.score[0]);
+    await scoreStart(options, options.score[0]);
 
     startInterval(options);
 
