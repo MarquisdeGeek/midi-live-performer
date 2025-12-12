@@ -83,15 +83,15 @@ const Keyboard = function() {
                         msg.volume = inputBytes[2];
                         msg.type = "noteon";
                         msg.param2 = `vol:${inputBytes[2]}`;
+                        keyStates[msgChannel][inputBytes[1]]++;
                     } else {
                         msg.msg = midi_info.Constants.Messages.NOTE_OFF;
                         msg.type = "noteoff";
                         msg.param2 = ``;
+                        keyStates[msgChannel][inputBytes[1]]--;
                     }
 
                     retMessage.push(msg);
-
-                    keyStates[msgChannel][inputBytes[1]]++;
 
                     consume3();
                     break;
