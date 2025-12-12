@@ -1,6 +1,8 @@
 
 const Keyboard = function() {
     const midi_info = require('midi-info');
+    const MIDIMessage = require('./midi_message');
+
     let keyStates = [];
     let inputBytes = [];
 
@@ -67,18 +69,27 @@ const Keyboard = function() {
 
             switch(msgType) {
                 case midi_info.Constants.Messages.NOTE_ON:
-                    retMessage.push({
-                        msg:     midi_info.Constants.Messages.NOTE_ON,
+                    let msg = {
                         channel: msgChannel,
                         pitch:   inputBytes[1],
-                        volume:  inputBytes[2],
                         
                         // extras, for serialisation/debug
-                        type: "noteon",
                         param1: patchFn(inputBytes[1]),
-                        param2: `vol:${inputBytes[2]}`,
                         data: inputBytes.slice(0,3)
-                    });
+                    };
+
+                    if (MIDIMessage.isNoteOn(inputBytes)) {
+                        msg.msg = midi_info.Constants.Messages.NOTE_ON;
+                        msg.volume = inputBytes[2];
+                        msg.type = "noteon";
+                        msg.param2 = `vol:${inputBytes[2]}`;
+                    } else {
+                        msg.msg = midi_info.Constants.Messages.NOTE_OFF;
+                        msg.type = "noteoff";
+                        msg.param2 = ``;
+                    }
+
+                    retMessage.push(msg);
 
                     keyStates[msgChannel][inputBytes[1]]++;
 
