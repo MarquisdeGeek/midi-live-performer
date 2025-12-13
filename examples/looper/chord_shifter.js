@@ -10,14 +10,12 @@ let name;
         name = chordName;
         
         chordInfo = midi_info.Chords.parseChordFromName(chordName);
-        // console.log(chordName, chordInfo);
 
     })(chordName);
 
     function getMappingTo(otherChord) {
         let otherChordInfo = otherChord.getChordInfo();
         let delta = otherChordInfo.chordRoot - chordInfo.chordRoot;
-        // console.log(otherChordInfo)
 
         // The basic pitch shift takes place in the relative major
         // (we move the 3rds etc later)

@@ -11,7 +11,7 @@
   "dependencies": {
     "@julusian/midi": "^3.5.3",
     "dotenv": "^16.4.5",
-    "midi-info": "^1.0.0",
-    "midi-live-performer": "^1.0.0"
+    "midi-info": "^1.0.8",
+    "midi-live-performer": "^1.0.8"
   }
 }

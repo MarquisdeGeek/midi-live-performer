@@ -19,6 +19,7 @@ let sequencer;
 let looper;
 let midiInputSend;
 let shifter;
+let looperControls;
 
 // State of instrument
 let settings = {
@@ -30,8 +31,7 @@ let settings = {
     soloMode:       false,
     ppqn:           midi_info.Constants.Pulses.DURATION_CROCHET,
     //
-    keySplitControlStart: 36, // One octave for channel selection, and commands
-    keySplitControlEnd:   60, // One beyond last control key
+    keySplitController: 1, // 0 = full, 1 = short
     //
     getTimeSinceBarSectionStart: function () {
         let timeSinceBarSectionStart = sequencer.getTimeSinceBarSectionStart(settings.barCount);
@@ -61,56 +61,125 @@ let settings = {
         }
         cbfn(soloed);
 
+        function nf(i) {// note name, which execute the handler 'i'
+            let noteName = `???`;
+            Object.keys(looperControls).forEach((key) => {
+                const action = looperControls[key];
+                if (action === i) {
+                    noteName = midi_info.Names.getNoteFromMIDI(parseInt(key));
+                }
+            });
+
+            return noteName;
+        }
 
         cbfn(`Track: ${looper.getCurrentTrack().getIndex()} Mode: ???`);
-        cbfn(`Pass through (D#1): ${settings.passThrough ? 'On' : 'Off'}`);
-        cbfn(`Octave shift (F#1): ${settings.octaveShift}`);
-        cbfn(`Quanitze     (G#1): ${settings.quantize} / ${settings.ppqn}`);
+        cbfn(`Erase note   (${nf(1)})`);
+        cbfn(`Pass through (${nf(3)}): ${settings.passThrough ? 'On' : 'Off'}`);
+        cbfn(`Octave shift (${nf(6)}): ${settings.octaveShift}`);
+        cbfn(`Quanitze     (${nf(8)}): ${settings.quantize} / ${settings.ppqn}`);
         cbfn(``);
-        cbfn(`Mute all     (C#2)`);
-        cbfn(`Unmute all   (D#2)`);
-        cbfn(`Solo mode    (F#2): ${settings.soloMode ? 'On' : 'Off'}`);
-        cbfn(`Unsolo all   (G#2)`);
-        cbfn(`Next chord   (A#2)`);
+        cbfn(`Mute all     (${nf(13)})`);
+        cbfn(`Unmute all   (${nf(15)})`);
+        cbfn(`Solo mode    (${nf(18)}): ${settings.soloMode ? 'On' : 'Off'}`);
+        cbfn(`Unsolo all   (${nf(20)})`);
+        cbfn(`Next chord   (${nf(22)})`);
         cbfn(``);
 
         shifter.report(cbfn);
     }
 };
 
-
-
-const looperControls = [
+// We number our actions from 0 to 23. These are mapped to the keys on the lower
+// part of a keyboard. Usually, these fall directly to an octave, or half octave.
+// (Not the best way of doing this, but fine for our purpose.)
+const looperHandlers = [
     // Primary controls, 1st octave
-    /*  0 : C  */ (looper, bIsDown) => { looper.setCurrentTrack(0) }, 
-    /*  1 : C# */ (looper, bIsDown) => { settings.eraseLoop = bIsDown; }, 
-    /*  2 : D  */ (looper, bIsDown) => { looper.setCurrentTrack(1) }, 
-    /*  3 : D# */ (looper, bIsDown) => { if (bIsDown) settings.passThrough = !settings.passThrough; },
-    /*  4 : E  */ (looper, bIsDown) => { looper.setCurrentTrack(2) }, 
-    /*  5 : F  */ (looper, bIsDown) => { looper.setCurrentTrack(3) }, 
-    /*  6 : F# */ (looper, bIsDown) => { if (bIsDown && ++settings.octaveShift > 2) settings.octaveShift = -2; },
-    /*  7 : G  */ (looper, bIsDown) => { looper.setCurrentTrack(4) }, 
-    /*  8 : G# */ (looper, bIsDown) => { if (bIsDown && (settings.quantize*=2) > 384) settings.quantize = 24; },
-    /*  9 : A  */ (looper, bIsDown) => { looper.setCurrentTrack(5) }, 
-    /* 10 : A# */ (looper, bIsDown) => { },
-    /* 11 : B  */ (looper, bIsDown) => { looper.setCurrentTrack(6) }, 
+    /*  0 : */ (looper, bIsDown) => { looper.setCurrentTrack(0) },
+    /*  1 : */ (looper, bIsDown) => { settings.eraseLoop = bIsDown; },
+    /*  2 : */ (looper, bIsDown) => { looper.setCurrentTrack(1) },
+    /*  3 : */ (looper, bIsDown) => { if (bIsDown) settings.passThrough = !settings.passThrough; },
+    /*  4 : */ (looper, bIsDown) => { looper.setCurrentTrack(2) },
+    /*  5 : */ (looper, bIsDown) => { looper.setCurrentTrack(3) },
+    /*  6 : */ (looper, bIsDown) => { if (bIsDown && ++settings.octaveShift > 2) settings.octaveShift = -2; },
+    /*  7 : */ (looper, bIsDown) => { looper.setCurrentTrack(4) },
+    /*  8 : */ (looper, bIsDown) => { if (bIsDown && (settings.quantize*=2) > 384) settings.quantize = 24; },
+    /*  9 : */ (looper, bIsDown) => { looper.setCurrentTrack(5) },
+    /* 10 : */ (looper, bIsDown) => { },
+    /* 11 : */ (looper, bIsDown) => { looper.setCurrentTrack(6) },
 
     // Secondary controls, 2nd octave with some parallel concepts to first
     // e.g. If Primary is "set track", Second is "mute track"
-    /*  0 : C  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(0); else looper.muteToggleTrack(0);} }, 
-    /*  1 : C# */ (looper, bIsDown) => { if (bIsDown) looper.muteToggleAllTracks() }, 
-    /*  2 : D  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(1); else looper.muteToggleTrack(1);} }, 
-    /*  3 : D# */ (looper, bIsDown) => { if (bIsDown) looper.unmuteAllTracks() }, 
-    /*  4 : E  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(2); else looper.muteToggleTrack(2);} }, 
-    /*  5 : F  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(3); else looper.muteToggleTrack(3);} }, 
-    /*  6 : F# */ (looper, bIsDown) => { settings.soloMode = bIsDown; }, 
-    /*  7 : G  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(4); else looper.muteToggleTrack(4);} }, 
-    /*  8 : G# */ (looper, bIsDown) => { if (bIsDown) looper.unsoloAllTracks() }, 
-    /*  9 : A  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(5); else looper.muteToggleTrack(5);} }, 
-    /* 10 : A# */ (looper, bIsDown) => { if (bIsDown) { shifter.nextChord(); }},
-    /* 11 : B  */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(6); else looper.muteToggleTrack(6);} }, 
+    /* 12 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(0); else looper.muteToggleTrack(0);} },
+    /* 13 : */ (looper, bIsDown) => { if (bIsDown) looper.muteToggleAllTracks() },
+    /* 14 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(1); else looper.muteToggleTrack(1);} },
+    /* 15 : */ (looper, bIsDown) => { if (bIsDown) looper.unmuteAllTracks() },
+    /* 16 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(2); else looper.muteToggleTrack(2);} },
+    /* 17 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(3); else looper.muteToggleTrack(3);} },
+    /* 18 : */ (looper, bIsDown) => { settings.soloMode = bIsDown; },
+    /* 19 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(4); else looper.muteToggleTrack(4);} },
+    /* 20 : */ (looper, bIsDown) => { if (bIsDown) looper.unsoloAllTracks() },
+    /* 21 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(5); else looper.muteToggleTrack(5);} },
+    /* 22 : */ (looper, bIsDown) => { if (bIsDown) { shifter.nextChord(); }},
+    /* 23 : */ (looper, bIsDown) => { if (bIsDown) { if (settings.soloMode) looper.soloToggleTrack(6); else looper.muteToggleTrack(6);} },
 
 ];
+
+async function prepareControls() {
+    if (settings.keySplitController === 0) {
+        prepareControlsFull();
+    } else {
+        prepareControlsShort();
+    }
+}
+
+async function prepareControlsShort() {
+    const N = midi_info.Constants.Notes;
+
+    looperControls = {};
+
+    // 1st is partial octave, F-C. 3 black notes for control, 4 white channel controls
+    // So here are the 7 handler indices for the notes (see looperHandlers)
+    [
+        {n:N.F,       h:2},
+        {n:N.F_SHARP, h:1},
+        {n:N.G,       h:4},
+        {n:N.G_SHARP, h:3},
+        {n:N.A,       h:5},
+        {n:N.A_SHARP, h:6},
+        {n:N.B,       h:7},
+    ].forEach((mapper) => {
+        looperControls[N.C3 + mapper.n] = mapper.h;
+    });
+
+    // 2nd whole octave
+    for(let i=0;i<12;++i) {
+        looperControls[N.C4 + i] = i + 12;
+    }
+}
+
+async function prepareControlsFull() {
+    // Whole octave: black notes are control, white for channels, from C3
+    const N = midi_info.Constants.Notes;
+
+    looperControls = {};
+
+    for(let i=0;i<24;++i) {
+        looperControls[N.C3 + i] = i;
+    }
+}
+
+function isControlKey(pitch) {
+    return typeof looperControls[pitch] !== typeof undefined ? true : false;
+}
+
+function doControlFrom(pitch, looper, isDown) {
+    if (isControlKey(pitch)) {
+        const handler = looperControls[pitch];
+        looperHandlers[handler](looper, isDown);
+    }
+}
+
 
 // Capture SIGINT to stop any outstanding notes
 // This is also why we have a global sequencer object.
@@ -197,59 +266,20 @@ async function prepareUI() {
 }
 
 
-function listDevices() {
-    // Input
-    console.log(`MIDI input devices:`);
-    const midiInput = new midi.Input();
-    for(let i=0; i<midiInput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiInput.getPortName(i)}`);
-    }
-
-    console.log(``);
-
-    // Output
-    console.log(`MIDI output devices:`);
-    const midiOutput = new midi.Output();
-    for(let i=0; i<midiOutput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiOutput.getPortName(i)}`);
-    }
-
-    console.log(``);
-    console.log(``);
-}
-
-
-function openPortByName(midiDevice, name, defaultIfFail) {
-    for(let i=0; i<midiDevice.getPortCount(); ++i) {
-        let portName = midiDevice.getPortName(i);
-        if (name === portName.substr(0, name.length)) {
-            midiDevice.openPort(i);
-            return i;
-        }
-    }
-
-    // We failed, so open the default
-    midiDevice.openPort(defaultIfFail);
-
-    return defaultIfFail;
-}
-
-
 async function main() {
 
     // Input, from a named device in the .env file
     const midiInput = new midi.Input();
-    // midiInput.openPortByName(process.env.STRUMMER_MIDI_INPUT);
-    openPortByName(midiInput, process.env.STRUMMER_MIDI_INPUT, 0);
+    performer.Utils.Midi.openPortByName(midiInput, process.env.MIDI_INPUT, 1);
 
     midiInputSend = new midi.Output();
-    openPortByName(midiInputSend, process.env.STRUMMER_MIDI_INPUT, 0);
+    performer.Utils.Midi.openPortByName(midiInputSend, process.env.MIDI_INPUT, 1);
     midiInputSend.sendMessage(midi_info.Messages.makeLocalControl(0, false));
     
     // Output
     const midiOutput = new midi.Output();
-    openPortByName(midiOutput, process.env.STRUMMER_MIDI_OUTPUT, 0);
-    // midiOutput.openPortByName(process.env.STRUMMER_MIDI_OUTPUT);
+    performer.Utils.Midi.openPortByName(midiOutput, process.env.MIDI_OUTPUT, 2);
+
 
     sequencer = new performer.Sequencer(midiOutput);
     sequencer.setPPQN(settings.ppqn);
@@ -276,8 +306,6 @@ async function main() {
     // Init callbacks and event listeners
     sequencer.on('pulse', () => {
         const doesSoloStateApply = looper.doesSoloStateApply();
-
-        
 
         // Remove the note(s) about to be played, on all muted channels
         // (and any tracks not solo'd, if appropriate)
@@ -340,9 +368,8 @@ async function main() {
             // Replay the message? Add to the looper?
             if (r.msg === midi_info.Constants.Messages.NOTE_ON) {
                 // Controller keys
-                if (r.pitch >= settings.keySplitControlStart && r.pitch < settings.keySplitControlEnd) {
-
-                    looperControls[r.pitch - settings.keySplitControlStart](looper, true);
+                if (isControlKey(r.pitch)) {
+                    doControlFrom(r.pitch, looper, true);
 
                     settings.report(looper, shifter, console.log);
                     //
@@ -359,8 +386,8 @@ async function main() {
 
             } else if (r.msg === midi_info.Constants.Messages.NOTE_OFF) {
                 // Controller keys
-                if (r.pitch >= settings.keySplitControlStart && r.pitch < settings.keySplitControlEnd) {
-                    looperControls[r.pitch - settings.keySplitControlStart](looper, false);
+                if (isControlKey(r.pitch)) {
+                    doControlFrom(r.pitch, looper, false);
                 } else {
                     // console.log(`Q': ${timeSinceLoopStart}  ${r.data}`);
                     // Tweak the pitch
@@ -392,9 +419,10 @@ async function main() {
     });
 }
 
+performer.Utils.Midi.listDevices("MIDI input devices:", new midi.Input());
+performer.Utils.Midi.listDevices("MIDI output devices:", new midi.Output());
 
-listDevices();
-
+prepareControls();
 prepareUI();
 
 main()
