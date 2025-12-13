@@ -12,7 +12,7 @@
     "@julusian/midi": "^3.5.3",
     "chord-identifier": "^1.0.0",
     "dotenv": "^16.4.5",
-    "midi-info": "^1.0.1",
-    "midi-live-performer": "^1.0.0"
+    "midi-info": "^1.0.10",
+    "midi-live-performer": "^1.0.8"
   }
 }

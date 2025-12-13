@@ -40,60 +40,24 @@ async function prepareUI() {
     console.log("Notes below the split generate the chord. White notes above strum downwards. Black notes strum up.");
 }
 
-function listDevices() {
-    // Input
-    console.log(`MIDI input devices:`);
-    const midiInput = new midi.Input();
-    for(let i=0; i<midiInput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiInput.getPortName(i)}`);
-    }
-
-    console.log(``);
-
-    // Output
-    console.log(`MIDI output devices:`);
-    const midiOutput = new midi.Output();
-    for(let i=0; i<midiOutput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiOutput.getPortName(i)}`);
-    }
-
-    console.log(``);
-    console.log(``);
-}
-
-
-function openPortByName(midiDevice, name, defaultIfFail) {
-    for(let i=0; i<midiDevice.getPortCount(); ++i) {
-        if (name === midiDevice.getPortName(i)) {
-            midiDevice.openPort(i);
-            return i;
-        }
-    }
-
-    // We failed, so open the default
-    midiDevice.openPort(defaultIfFail);
-
-    return defaultIfFail;
-}
-
 
 async function main() {
 
     // Input, from a named device in the .env file
     const midiInput = new midi.Input();
-    openPortByName(midiInput, process.env.STRUMMER_MIDI_INPUT, 0);
+    performer.Utils.Midi.openPortByName(midiInput, process.env.STRUMMER_MIDI_INPUT, 1);
 
     midiInputSend = new midi.Output();
-    openPortByName(midiInputSend, process.env.STRUMMER_MIDI_INPUT, 0);
+    performer.Utils.Midi.openPortByName(midiInput, process.env.STRUMMER_MIDI_INPUT, 1);
     midiInputSend.sendMessage(midi_info.Messages.makeLocalControl(0, false));
 
     // Output
     const midiOutput = new midi.Output();
-    openPortByName(midiOutput, process.env.STRUMMER_MIDI_OUTPUT, 0);
-
+    performer.Utils.Midi.openPortByName(midiOutput, process.env.STRUMMER_MIDI_OUTPUT, 2);
 
     // Standard sequencer object
     sequencer = new performer.Sequencer(midiOutput);
+    sequencer.setProgram(0,  midi_info.Constants.Instruments.ACOUSTIC_GUITAR_NYLON);
 
 
     // A new keyboard object, used here to parse the input into text
@@ -181,7 +145,8 @@ async function main() {
 }
 
 
-listDevices();
+performer.Utils.Midi.listDevices("MIDI input devices:", new midi.Input());
+performer.Utils.Midi.listDevices("MIDI output devices:", new midi.Output());
 
 prepareUI();
 
