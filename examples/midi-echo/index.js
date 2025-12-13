@@ -83,6 +83,7 @@ async function main() {
     const midiOutput = new midi.Output();
     midiOutput.openPort(midiOutput.getPortCount() - 2); // my output synth, ymmv
     sequencer = new performer.Sequencer(midiOutput);
+    sequencer.setProgram(0, midi_info.Constants.Instruments.ELECTRIC_GUITAR_JAZZ);
 
 
     // A new keyboard object, used here to parse the input into text
@@ -116,6 +117,10 @@ async function main() {
       }); // hceArof
     });
 }
+
+
+performer.Utils.Midi.listDevices("MIDI input devices:", new midi.Input());
+performer.Utils.Midi.listDevices("MIDI output devices:", new midi.Output());
 
 
 main()
