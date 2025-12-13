@@ -1,5 +1,4 @@
 const MIDIMessageQueue = function() {
-    const midi_info = require('midi-info');
     const MIDIMessage = require('./midi_message');
     let queue = []; // each object has t:<time> c:<channel> d:<data>
 

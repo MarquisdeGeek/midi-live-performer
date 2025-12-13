@@ -11,10 +11,14 @@ const MIDIMessage = require('./midi_message').MIDIMessage;
 /** MIDI message queue handling */
 const MIDIMessageQueue = require('./midi_message_queue').MIDIMessageQueue;
 
+/** Utility methods */
+const Utils = require('./utils').Utils;
+
 module.exports = {
 
     Sequencer,
     Keyboard,
     MIDIMessage,
     MIDIMessageQueue,
+    Utils,
 };
