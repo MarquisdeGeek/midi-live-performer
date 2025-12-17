@@ -11,6 +11,6 @@
   "dependencies": {
     "@julusian/midi": "^3.4.0",
     "midi-info": "^1.0.0",
-    "midi-live-performer": "^1.0.8"
+    "midi-live-performer": "^2.0.0"
   }
 }
