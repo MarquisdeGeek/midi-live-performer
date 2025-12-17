@@ -266,8 +266,8 @@ const Sequencer = function(output) {
         waitFor = Math.floor(waitFor);
         duration = Math.floor(duration);
         
-        qNoteOn(channel, pitch, volume, waitFor);
-        qNoteOff(channel, pitch, waitFor+duration);
+        qNoteOn(waitFor, channel, pitch, volume);
+        qNoteOff(waitFor+duration, channel, pitch);
 
         traceLog(`Q.note (w=${waitFor}  d=${duration}) is:  ${JSON.stringify(queue)}`);
         // traceLog("Q is:", JSON.stringify(queue))
@@ -346,7 +346,7 @@ const Sequencer = function(output) {
     }
 
 
-    function qNoteOn(channel, pitch, volume = 120, waitFor = 0) {
+    function qNoteOn(waitFor, channel, pitch, volume = 120) {
         // 
         if (channel < 0 || channel > 15) {
             return;
@@ -363,7 +363,7 @@ const Sequencer = function(output) {
         return waitFor;
     }
 
-    function qNoteOff(channel, pitch, waitFor = 1) {
+    function qNoteOff(waitFor, channel, pitch) {
         waitFor = Math.floor(waitFor);
 
         queue.addMessage({c:channel, d:[midi_info.Constants.Messages.NOTE_OFF | channel, pitch, 0], t:Math.floor((waitFor * intervalPulsesPerQuarter) / qnDuration)});

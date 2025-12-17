@@ -106,15 +106,15 @@ async function main() {
             //
             if (r.msg === midi_info.Constants.Messages.NOTE_ON) {
                 echoParams.forEach((echo) => {
-                    sequencer.qNoteOn(r.channel, r.pitch + echo.pitch, r.volume / echo.volume,  echo.atTime);
+                    sequencer.qNoteOn(echo.atTime, r.channel, r.pitch + echo.pitch, r.volume / echo.volume);
                 });
 
             } else if (r.msg === midi_info.Constants.Messages.NOTE_OFF) {
                 echoParams.forEach((echo) => {
-                    sequencer.qNoteOff(r.channel, r.pitch + echo.pitch,  echo.atTime);
+                    sequencer.qNoteOff(echo.atTime, r.channel, r.pitch + echo.pitch);
                 });
             }
-      }); // hceArof
+      }); // hcaErof
     });
 }
 
