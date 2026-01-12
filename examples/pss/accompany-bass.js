@@ -2,6 +2,7 @@ const midi_info = require('midi-info');
 const Chords = midi_info.Chords;
 
 const qnDuration = midi_info.Constants.Pulses.DURATION_CROCHET;
+const volBass = 45;
 
 // console.log(Chords)
 function none(seq, chord, channel, bar, beat, pulse) {
@@ -16,8 +17,8 @@ function basic(seq, chord, channel, bar, beat, pulse) {
     // If we have a chord, then fill the next beat(s) with a bass note
     if (chord.length) {
         let rootPitch = chord[0];
-        seq.qNote(0, channel, rootPitch,  120, qnDuration/2);
-        seq.qNote(qnDuration/2, channel, rootPitch + (beat == 3 ? -5 : 0),  100, qnDuration/2);
+        seq.qNote(0, channel, rootPitch,  volBass, qnDuration/2);
+        seq.qNote(qnDuration/2, channel, rootPitch + (beat == 3 ? -5 : 0),  volBass, qnDuration/2);
     }
 
 }
@@ -32,7 +33,7 @@ function arpeg(seq, chord, channel, bar, beat, pulse) {
         let rootPitch = chord[0];
         let startAt = 0;
         for(let i=0;i<4;++i) {
-            startAt = seq.qNote(startAt, channel, rootPitch + pattern[beat*4 + i],  120, qnDuration/4);
+            startAt = seq.qNote(startAt, channel, rootPitch + pattern[beat*4 + i],  volBass, qnDuration/4);
         }
     }
 
@@ -56,7 +57,7 @@ function piano(seq, chord, channel, bar, beat, pulse) {
         let startAt = 0;
         for(let i=0;i<pattern[beat].length;++i) { // consecutive notes
             for(let n=0;n<pattern[beat][i].n.length;++n) { // harmony notes
-                startAt = seq.qNote(startAt, channel, rootPitch + pattern[beat][i].n[n],  120, pattern[beat][i].d);
+                startAt = seq.qNote(startAt, channel, rootPitch + pattern[beat][i].n[n],  volBass, pattern[beat][i].d);
             }
         }
     }

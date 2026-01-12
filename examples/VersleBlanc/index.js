@@ -5,6 +5,7 @@ const midi_info = require('midi-info');
 const performer = require('midi-live-performer');
 const scoreVersleBlanc = require('./s_versleblanc');
 const scoreSchubertLoop = require('./s_schubert');
+const scoreSchubertLoop2 = require('./s_schubert_arpeg');
 
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -167,8 +168,10 @@ async function scoreStart(options, scorePart) {
         };
 
         // Play
-        console.log(`On:`,note.channel, note.noteStart, 120);
-        midiOutput.sendMessage(midi_info.Messages.makeNoteOn(note.channel, note.noteStart, 120));
+        const volume = typeof note.volume === typeof undefined ? 120 : note.volume;
+
+        console.log(`On:`,note.channel, note.noteStart, volume);
+        midiOutput.sendMessage(midi_info.Messages.makeNoteOn(note.channel, note.noteStart, volume));
     });
 
     //
@@ -180,7 +183,7 @@ async function scoreStart(options, scorePart) {
 
 function scoreEnd(options) {
     options.channels.forEach((channel) => {
-        console.log(`Off:`,channel.channel, channel.lastNotePlayed, 120);
+        console.log(`Off:`,channel.channel, channel.lastNotePlayed);
 
         midiOutput.sendMessage(midi_info.Messages.makeNoteOff(channel.channel, channel.lastNotePlayed));
     });
@@ -195,6 +198,8 @@ function startInterval(options) {
 
             if (typeof currentScorePart.postWait !== typeof undefined) {
                 log(`Post-wait : ${currentScorePart.postWait}`);
+
+                // Any more score parts to play?
                 clearInterval(ival);
                 await delay(currentScorePart.postWait);
                 startInterval(options);
@@ -205,10 +210,8 @@ function startInterval(options) {
                 scoreEnd(options);
             } else {
                 log("End not done")
-            }
-            
-            
-            // Any more score parts to play?
+            } 
+            // TODO:
             if (++options.scoreIndex >= options.score.length) {
                 log(`Exit..`);
                 clearInterval(ival);
@@ -253,6 +256,7 @@ async function main() {
     sequencer = new performer.Sequencer(midiOutput);
 
     const useScore = scoreSchubertLoop;
+    // const useScore = scoreSchubertLoop2;
     // const useScore = scoreVersleBlanc;
     const options = {
         score: useScore.score,

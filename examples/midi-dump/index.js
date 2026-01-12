@@ -6,7 +6,7 @@ async function main() {
 
     // Input, from the last device (usually an external synth)
     const midiInput = new midi.Input();
-    midiInput.openPort(midiInput.getPortCount() - 1);
+    midiInput.openPort(1);
 
     // A new keyboard object, used here to parse the input into text
     const keys = new performer.Keyboard();

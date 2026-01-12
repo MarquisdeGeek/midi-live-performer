@@ -1,7 +1,8 @@
 const midi_info = require('midi-info');
-const rootC = midi_info.Constants.Notes.C4;
+const rootC1 = midi_info.Constants.Notes.C4;
 const rootC2 = midi_info.Constants.Notes.C5;
-const chordDuration = 3 + 0*60// in seconds
+const rootC3 = midi_info.Constants.Notes.C4;
+const chordDuration = 3 + 5*60// in seconds
 const preWait = 2000;
 const postWait = 2000;
 
@@ -16,8 +17,8 @@ const score = {
                     {
                         channel: 0,
                         bank: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.D,
-                        noteEnd:   rootC + midi_info.Constants.Notes.C,
+                        noteStart: rootC1 + midi_info.Constants.Notes.D,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.C,
                     },
                     {
                         channel: 1,
@@ -28,8 +29,8 @@ const score = {
                     {
                         channel: 2,
                         bank: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.A,
-                        noteEnd:   rootC + midi_info.Constants.Notes.A,
+                        noteStart: rootC3 + midi_info.Constants.Notes.A,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.A,
                     },
                 ]
             },
@@ -38,8 +39,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.C,
-                        noteEnd:   rootC + midi_info.Constants.Notes.C,
+                        noteStart: rootC1 + midi_info.Constants.Notes.C,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.C,
                     },
                     {
                         channel: 1,
@@ -48,8 +49,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.A,
-                        noteEnd:   rootC + midi_info.Constants.Notes.A,
+                        noteStart: rootC3 + midi_info.Constants.Notes.A,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.A,
                     },
                 ],
             },
@@ -58,8 +59,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.C,
-                        noteEnd:   rootC + midi_info.Constants.Notes.C,
+                        noteStart: rootC1 + midi_info.Constants.Notes.C,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.C,
                     },
                     {
                         channel: 1,
@@ -68,8 +69,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.A,
-                        noteEnd:   rootC + midi_info.Constants.Notes.G,
+                        noteStart: rootC3 + midi_info.Constants.Notes.A,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.G,
                     },
                 ],
             },
@@ -78,8 +79,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.C,
-                        noteEnd:   rootC + midi_info.Constants.Notes.C,
+                        noteStart: rootC1 + midi_info.Constants.Notes.C,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.C,
                     },
                     {
                         channel: 1,
@@ -88,8 +89,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.G,
-                        noteEnd:   rootC + midi_info.Constants.Notes.G,
+                        noteStart: rootC3 + midi_info.Constants.Notes.G,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.G,
                     },
                 ],
             },
@@ -98,8 +99,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.C,
-                        noteEnd:   rootC + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteStart: rootC1 + midi_info.Constants.Notes.C,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
                     },
                     {
                         channel: 1,
@@ -108,8 +109,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.G,
-                        noteEnd:   rootC + midi_info.Constants.Notes.G,
+                        noteStart: rootC3 + midi_info.Constants.Notes.G,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.G,
                     },
                 ],
             },
@@ -118,8 +119,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.B_FLAT - 12,
-                        noteEnd:   rootC + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteStart: rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
                     },
                     {
                         channel: 1,
@@ -128,8 +129,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.G,
-                        noteEnd:   rootC + midi_info.Constants.Notes.G,
+                        noteStart: rootC3 + midi_info.Constants.Notes.G,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.G,
                     },
                 ],
             },
@@ -138,8 +139,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.B_FLAT - 12,
-                        noteEnd:   rootC + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteStart: rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
                     },
                     {
                         channel: 1,
@@ -148,8 +149,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.G,
-                        noteEnd:   rootC + midi_info.Constants.Notes.F,
+                        noteStart: rootC3 + midi_info.Constants.Notes.G,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.F,
                     },
                 ],
             },
@@ -158,8 +159,8 @@ const score = {
                 parts: [
                     {
                         channel: 0,
-                        noteStart: rootC + midi_info.Constants.Notes.B_FLAT - 12,
-                        noteEnd:   rootC + midi_info.Constants.Notes.A, // should be -12, but I prefer it this way :)
+                        noteStart: rootC1 + midi_info.Constants.Notes.B_FLAT - 12,
+                        noteEnd:   rootC1 + midi_info.Constants.Notes.A, // should be -12, but I prefer it this way :)
                     },
                     {
                         channel: 1,
@@ -168,8 +169,8 @@ const score = {
                     },
                     {
                         channel: 2,
-                        noteStart: rootC + midi_info.Constants.Notes.F,
-                        noteEnd:   rootC + midi_info.Constants.Notes.F,
+                        noteStart: rootC3 + midi_info.Constants.Notes.F,
+                        noteEnd:   rootC3 + midi_info.Constants.Notes.F,
                     },
                 ],
             },
@@ -207,9 +208,21 @@ const orchestration3 = [
 const orchestration4 = [
     {b:1,p:28},
     {b:2,p:117},
-    {b:5,p:34},
+    {b:5,p:36},
 ];
-orchestration4.forEach((s,i) => {score.score[0].parts[i].patch = s.p,score.score[0].parts[i].bank = s.b})
+// b:1,p:95 => 181 = sweep pad (121, 0, 96)
+// b:2,p:60 => 130 = french horn (121 0 61)
+// 3,p:59 => 127 = mutedtrumpet (121 0 60)
+// 1,159=>254 =- machine gun (121, 1, -)
+const orchestrationNull = [
+    {b:undefined,p:undefined,v:120}, // used 001 jp8strings1, but might prefer metal pad 188 (msb 95, lsb 65, pc=60)
+    {b:0,p:49,v:90}, // string (17 was organ)
+    {b:0,p:48,v:90},
+];
+orchestrationNull.forEach((s,i) => {score.score[0].parts[i].patch = s.p,score.score[0].parts[i].bank = s.b,score.score[0].parts[i].volume = s.v})
+
+// For P16
+// orchestration5.forEach((s,i) => {score.score[0].parts[i].patch = s.p,score.score[0].parts[i].bank = s.b,score.score[0].parts[i].channel = i})
 
 
 module.exports = score;

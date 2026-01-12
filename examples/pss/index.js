@@ -93,33 +93,12 @@ async function prepareUI() {
 
 }
 
-function listDevices() {
-    // Input
-    console.log(`MIDI input devices:`);
-    const midiInput = new midi.Input();
-    for(let i=0; i<midiInput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiInput.getPortName(i)}`);
-    }
-
-    console.log(``);
-
-    // Output
-    console.log(`MIDI output devices:`);
-    const midiOutput = new midi.Output();
-    for(let i=0; i<midiOutput.getPortCount(); ++i) {
-        console.log(`${i} : ${midiOutput.getPortName(i)}`);
-    }
-
-    console.log(``);
-    console.log(``);
-}
-
 
 async function main() {
 
     // Input, from the last device (usually an external synth)
     const midiInput = new midi.Input();
-    const midiInputPort = 3; // or //midiInput.getPortCount() - 1);
+    const midiInputPort = 3;
     midiInput.openPort(midiInputPort);
 
     midiInputSend = new midi.Output();
@@ -148,7 +127,7 @@ async function main() {
 
         sequencer.setProgram(0, midi_info.Constants.Instruments.ACOUSTIC_GRAND_PIANO);
         sequencer.setProgram(1, midi_info.Constants.Instruments.ELECTRIC_BASS_FINGER);
-        sequencer.setProgram(2, midi_info.Constants.Instruments.PERCUSSIVE_ORGAN);
+        sequencer.setProgram(2, midi_info.Constants.Instruments.MUSIC_BOX);
 
         accompanyBass[fillAccompaniment.bass](sequencer, bestChord, 1, bar, beat, pulse);
         accompanyChords[fillAccompaniment.chords](sequencer, bestChord, 2, bar, beat, pulse);
@@ -182,7 +161,8 @@ async function main() {
 }
 
 
-listDevices();
+performer.Utils.Midi.listDevices("MIDI input devices:", new midi.Input());
+performer.Utils.Midi.listDevices("MIDI output devices:", new midi.Output());
 
 prepareUI();
 
