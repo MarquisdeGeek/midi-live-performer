@@ -35,3 +35,11 @@ Confirm this with:
 ```
 channels
 ```
+
+# Learn more
+
+I have a talk on this project at https://fosdem.org/2026/schedule/event/FE7Y87-midi_live_performer/
+
+# Hear more
+
+My music, often spawned from loops and algorithms created from this project can be found at https://nodemusic.bandcamp.com/music
